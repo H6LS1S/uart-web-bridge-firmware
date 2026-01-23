@@ -1,0 +1,3 @@
+[submodule "client"]
+	path = client
+	url = https://github.com/H6LS1S/uart-web-bridge-client.git
