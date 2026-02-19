@@ -8,3 +8,5 @@ managed_components/
 .idea/
 
 build/
+
+node_modules/

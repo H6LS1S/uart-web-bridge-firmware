@@ -1,0 +1,87 @@
+name: Release
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Cache ESP-IDF
+        uses: actions/cache@v4
+        with:
+          key: esp-idf-v5.5.2-${{ runner.os }}
+          path: /opt/esp/
+
+      - name: Cache Build
+        uses: actions/cache@v4
+        with:
+          path: build/
+          key: firmware-build-${{ runner.os }}-${{ hashFiles('**/*.c', '**/*.h', 'CMakeLists.txt', 'sdkconfig') }}
+          restore-keys: firmware-build-${{ runner.os }}-
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump client version
+        run: npx semantic-release --dry-run --no-ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install ESP-IDF
+        uses: espressif/install-esp-idf-action@v1
+        with:
+          version: v5.5.2
+          tools-path: "/opt/esp/tools"
+          path: "/opt/esp/idf"
+
+      - name: Build firmware
+        run: idf.py build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: |
+            build/*.bin
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: build/
+
+      - name: Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
