@@ -22,6 +22,7 @@ if(NOT NPM_BUILD_RESULT EQUAL 0)
     message(FATAL_ERROR "npm run build failed")
 endif()
 
+set(GZ_INDEX_HTML_PATH "${CMAKE_CURRENT_SOURCE_DIR}/client/dist/index.html.gz")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 idf_build_set_property(MINIMAL_BUILD ON)
